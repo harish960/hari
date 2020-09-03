@@ -1,0 +1,39 @@
+resource "aws_lambda_function" "lambda" {
+    function_name     = "lambda"
+    handler           = "${var.lambdahandler}"
+    runtime           = "${var.lambdaruntime}"
+    filename          = "${var.lambdafile}"
+    source_code_hash  = "${var.sourcecodehash}"
+    role              = "${var.lambdarole}"
+    kms_key_arn       = "${var.kmskeyarn}"
+    timeout           = "${var.timeout}"
+    memory_size       = "${var.memory_size}"
+    layers            = ["${var.lambda_layers}"]
+    reserved_concurrent_executions = "${var.reserved}"
+    environment {
+      variables = "${var.lambda_env}"
+  }
+    vpc_config = {
+        subnet_ids = [ "${var.subnet_ids}" ]
+        security_group_ids = [ "${var.security_group_ids}" ]
+    }
+    
+resource "aws_cloudwatch_event_rule" "policy" {
+  name        = "lambda_update_policy"
+  description = "trigger lambda"
+  schedule_expression =  "cron(0 0/1 ? * * *)"
+}
+
+resource "aws_cloudwatch_event_target" "lambda_policy" {
+  rule      = "${aws_cloudwatch_event_rule.policy.name}"
+  target_id = "lambda_update_policy"
+  arn       = "${aws_lambda_function.lambda.arn}"
+}
+
+resource "aws_lambda_permission" "cloud-lambda-permission" {
+  statement_id  = "name"
+  action        = "lambda:InvokeFunction"
+  function_name = "${{aws_lambda_function.lambda.arn}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.policy.arn}"
+}
