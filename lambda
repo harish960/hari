@@ -1,4 +1,4 @@
-resource "aws_iam_role" "hermes_splunk_access" {
+resource "aws_iam_role" "access" {
   name = "lambda_access"
   assume_role_policy = <<EOF
 {
